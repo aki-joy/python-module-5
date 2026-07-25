@@ -6,6 +6,7 @@ class DataProcesser(ABC):
     def __init__(self) -> None:
         self._data: list[tuple[int, str]] = []
         self._next_rank: int = 0
+        self.index_output = -1
 
     @abstractmethod
     def validate(self, data: Any) -> bool:
@@ -16,12 +17,13 @@ class DataProcesser(ABC):
         pass
 
     def output(self) -> tuple[int, str]:
-        return self._data[self._next_rank]
+        self.index_output += 1
+        return self._data[self.index_output]
 
 
 class NumericProcesser(DataProcesser):
     def __init__(self) -> None:
-        super.__init__()
+        super().__init__()
 
     def validate(self, data: Any) -> bool:
         if isinstance(data, (int, float)):
@@ -45,11 +47,11 @@ class NumericProcesser(DataProcesser):
 
         if isinstance(data, list):
             for item in data:
-                self._data.append(self._next_rank, (str(item)))
+                self._data.append((self._next_rank, (str(item))))
                 self._next_rank += 1
 
         else:
-            self._data.append(self._next_rank, str(data))
+            self._data.append((self._next_rank, str(data)))
             self._next_rank += 1
 
 
@@ -79,7 +81,7 @@ class TextProcesser(DataProcesser):
                 self._next_rank += 1
 
         else:
-            self._data.append(self._next_rank, item)
+            self._data.append((self._next_rank, data))
             self._next_rank += 1
 
 
@@ -91,8 +93,11 @@ class LogProcesser(DataProcesser):
         if isinstance(data, list):
             logs = data
 
-        else:
+        elif isinstance(data, dict):
             logs = [data]
+
+        else:
+            return False
 
         for log in logs:
             return all(
@@ -103,8 +108,6 @@ class LogProcesser(DataProcesser):
                 for value in log.values()
             )
 
-        return False
-
     def ingest(self, data: dict[str, str] | list[dict[str, str]]) -> None:
         if not self.validate(data):
             raise ValueError("Improper log data")
@@ -113,7 +116,7 @@ class LogProcesser(DataProcesser):
             logs = data
         else:
             logs = [data]
-        
+
         for log in logs:
             processed_log = (
                 log["log_level"]
@@ -127,8 +130,57 @@ class LogProcesser(DataProcesser):
 
 
 if __name__ == "__main__":
-    fortytwo = NumericProcesser()
+    numeric = NumericProcesser()
     print(
-        "=== Code Nexus - Data Processer ===\n"
-        "Testing Numeric Processer..."
+        "=== Code Nexus - Data Processer ===\n\n"
+        "Testing Numeric Processer...\n"
+        f" Trying to validate input '42': {numeric.validate(42)}\n"
+        f" Trying to validata input 'hello': {numeric.validate('hello')}"
     )
+    print(" Test invalid ingestion of string 'foo' without prior validation:")
+    try:
+        numeric.ingest('foo')
+    except ValueError as e:
+        print(f"Got exception: {e}")
+
+    numerics = [1, 2, 3, 4, 5]
+    numeric.ingest(numerics)
+    print(
+        f" Processing data: {numerics}\n"
+        " Extracting 3 values..."
+    )
+    for _ in range(3):
+        rank, value = numeric.output()
+        print(f" Numeric value {rank}: {value}")
+    print("\n")
+    text = TextProcesser()
+    print(
+        "Testing Text Processer...\n"
+        f" Trying to validate input '42': {text.validate(42)}"
+    )
+
+    texts = ["Hello", "Nexus", "World"]
+    text.ingest(texts)
+    print(
+        f" Processing data: {texts}\n"
+        " Extracting 1 value..."
+    )
+    rank, value = text.output()
+    print(f" Text value {rank}: {value}\n\n")
+
+    log = LogProcesser()
+    print(
+        "Testing Log Processer...\n"
+        f" Trying to validate input 'hello': {log.validate('hello')}"
+    )
+
+    logs = [{'log_level': 'NOTICE', 'log_message': 'Connection to server'},
+            {'log_level': 'ERROR', 'log_message': 'Unauthorized access!!'}]
+    log.ingest(logs)
+    print(
+        f" Processing data: {logs}\n"
+        " Extracting 2 values..."
+    )
+    for _ in range(2):
+        rank, value = log.output()
+        print(f" Log entry {rank}: {value}")
