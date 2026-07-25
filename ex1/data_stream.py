@@ -22,7 +22,7 @@ class DataProcesser(ABC):
         return self._data[self._index_output]
 
     def data_len(self) -> int:
-        return len(self._data)
+        return len(self._data) - self._index_output - 1
 
 
 class NumericProcesser(DataProcesser):
@@ -124,7 +124,7 @@ class LogProcesser(DataProcesser):
             logs = data
         else:
             logs = [data]
-        
+
         for log in logs:
             processed_log = (
                 log["log_level"]
