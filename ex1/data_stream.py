@@ -111,6 +111,8 @@ class LogProcessor(DataProcessor):
 
         return all(
             isinstance(log, dict)
+            and isinstance(log.get("log_level"), str)
+            and isinstance(log.get("log_message"), str)
             and all(
                 isinstance(key, str) and isinstance(value, str)
                 for key, value in log.items()
