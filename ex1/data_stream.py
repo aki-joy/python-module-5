@@ -2,7 +2,7 @@ from typing import Any
 from abc import ABC, abstractmethod
 
 
-class DataProcesser(ABC):
+class DataProcessor(ABC):
     def __init__(self) -> None:
         self._data: list[tuple[int, str]] = []
         self._next_rank: int = 0
@@ -18,15 +18,16 @@ class DataProcesser(ABC):
         pass
 
     def output(self) -> tuple[int, str]:
-        extracted_data = self._data[0]
-        del self._data[0]
-        return extracted_data
+        if not self._data:
+            raise IndexError("No data available")
+
+        return self._data.pop(0)
 
     def data_len(self) -> int:
         return len(self._data)
 
 
-class NumericProcesser(DataProcesser):
+class NumericProcessor(DataProcessor):
     def __init__(self) -> None:
         super().__init__()
 
@@ -62,8 +63,8 @@ class NumericProcesser(DataProcesser):
             self._total_processed += 1
 
 
-class TextProcesser(DataProcesser):
-    def __init__(self):
+class TextProcessor(DataProcessor):
+    def __init__(self) -> None:
         super().__init__()
 
     def validate(self, data: Any) -> bool:
@@ -94,8 +95,8 @@ class TextProcesser(DataProcesser):
             self._total_processed += 1
 
 
-class LogProcesser(DataProcesser):
-    def __init__(self):
+class LogProcessor(DataProcessor):
+    def __init__(self) -> None:
         super().__init__()
 
     def validate(self, data: Any) -> bool:
@@ -108,14 +109,14 @@ class LogProcesser(DataProcesser):
         else:
             return False
 
-        for log in logs:
-            return all(
-                isinstance(key, str)
-                for key in log.keys()
-            ) and all(
-                isinstance(value, str)
-                for value in log.values()
+        return all(
+            isinstance(log, dict)
+            and all(
+                isinstance(key, str) and isinstance(value, str)
+                for key, value in log.items()
             )
+            for log in logs
+        )
 
     def ingest(self, data: dict[str, str] | list[dict[str, str]]) -> None:
         if not self.validate(data):
@@ -141,16 +142,16 @@ class LogProcesser(DataProcesser):
 
 class DataStream:
     def __init__(self) -> None:
-        self._processers: list[DataProcesser] = []
+        self._processors: list[DataProcessor] = []
 
-    def register_processer(self, proc: DataProcesser) -> None:
-        self._processers.append(proc)
+    def register_processor(self, proc: DataProcessor) -> None:
+        self._processors.append(proc)
 
     def process_stream(self, stream: list[Any]) -> None:
         for data in stream:
-            for processer in self._processers:
-                if processer.validate(data):
-                    processer.ingest(data)
+            for processor in self._processors:
+                if processor.validate(data):
+                    processor.ingest(data)
                     break
 
             else:
@@ -159,17 +160,17 @@ class DataStream:
                     f"- Can't process element in stream: {data}"
                 )
 
-    def print_processer_stats(self) -> None:
+    def print_processors_stats(self) -> None:
         print("== DataStream statistics ==")
 
-        if self._processers == []:
-            print("No processer found, no data\n")
+        if self._processors == []:
+            print("No processor found, no data\n")
 
-        for processer in self._processers:
+        for processor in self._processors:
             print(
-                f"{processer.__class__.__name__}: "
-                f"total {processer._total_processed} items processed, "
-                f"remaining {processer.data_len()} on processer"
+                f"{processor.__class__.__name__}: "
+                f"total {processor._total_processed} items processed, "
+                f"remaining {processor.data_len()} on processor"
             )
 
 
@@ -180,14 +181,14 @@ if __name__ == "__main__":
         "Initialize Data Stream..."
     )
 
-    data_stream.print_processer_stats()
+    data_stream.print_processors_stats()
 
-    numeric = NumericProcesser()
-    text = TextProcesser()
-    log = LogProcesser()
+    numeric = NumericProcessor()
+    text = TextProcessor()
+    log = LogProcessor()
 
-    print("Registering Numeric Processer\n")
-    data_stream.register_processer(numeric)
+    print("Registering Numeric Processor\n")
+    data_stream.register_processor(numeric)
 
     datas = [
         'Hello world', [3.14, -1, 2.71],
@@ -201,17 +202,17 @@ if __name__ == "__main__":
     print(f"Send first batch of data on stream: {datas}\n")
     data_stream.process_stream(datas)
     print("== DataStream statistics ==")
-    data_stream.print_processer_stats()
+    data_stream.print_processors_stats()
     print("")
 
-    data_stream.register_processer(text)
-    data_stream.register_processer(log)
-    print("registering other data processers")
+    data_stream.register_processor(text)
+    data_stream.register_processor(log)
+    print("registering other data processors")
 
     data_stream.process_stream(datas)
     print("Send the same batch again")
     print("== DataStream statistics ==")
-    data_stream.print_processer_stats()
+    data_stream.print_processors_stats()
     print("")
 
     for _ in range(3):
@@ -221,8 +222,8 @@ if __name__ == "__main__":
     log.output()
 
     print(
-        "Consume some elements from the data processer: "
+        "Consume some elements from the data processors: "
         "Numeric 3, Text 2, Log 1\n"
         "== DataStream statistics =="
     )
-    data_stream.print_processer_stats()
+    data_stream.print_processors_stats()

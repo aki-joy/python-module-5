@@ -2,7 +2,7 @@ from typing import Any
 from abc import ABC, abstractmethod
 
 
-class DataProcesser(ABC):
+class DataProcessor(ABC):
     def __init__(self) -> None:
         self._data: list[tuple[int, str]] = []
         self._next_rank: int = 0
@@ -17,12 +17,13 @@ class DataProcesser(ABC):
         pass
 
     def output(self) -> tuple[int, str]:
-        extracted_data = self._data[0]
-        del self._data[0]
-        return extracted_data
+        if not self._data:
+            raise IndexError("No data available")
+
+        return self._data.pop(0)
 
 
-class NumericProcesser(DataProcesser):
+class NumericProcessor(DataProcessor):
     def __init__(self) -> None:
         super().__init__()
 
@@ -56,8 +57,8 @@ class NumericProcesser(DataProcesser):
             self._next_rank += 1
 
 
-class TextProcesser(DataProcesser):
-    def __init__(self):
+class TextProcessor(DataProcessor):
+    def __init__(self) -> None:
         super().__init__()
 
     def validate(self, data: Any) -> bool:
@@ -86,11 +87,11 @@ class TextProcesser(DataProcesser):
             self._next_rank += 1
 
 
-class LogProcesser(DataProcesser):
-    def __init__(self):
+class LogProcessor(DataProcessor):
+    def __init__(self) -> None:
         super().__init__()
 
-    def validate(self, data: dict[str, str] | list[dict[str, str]]) -> bool:
+    def validate(self, data: Any) -> bool:
         if isinstance(data, list):
             logs = data
 
@@ -100,14 +101,14 @@ class LogProcesser(DataProcesser):
         else:
             return False
 
-        for log in logs:
-            return all(
-                isinstance(key, str)
-                for key in log.keys()
-            ) and all(
-                isinstance(value, str)
-                for value in log.values()
+        return all(
+            isinstance(log, dict)
+            and all(
+                isinstance(key, str) and isinstance(value, str)
+                for key, value in log.items()
             )
+            for log in logs
+        )
 
     def ingest(self, data: dict[str, str] | list[dict[str, str]]) -> None:
         if not self.validate(data):
@@ -131,12 +132,12 @@ class LogProcesser(DataProcesser):
 
 
 if __name__ == "__main__":
-    numeric = NumericProcesser()
+    numeric = NumericProcessor()
     print(
-        "=== Code Nexus - Data Processer ===\n\n"
-        "Testing Numeric Processer...\n"
+        "=== Code Nexus - Data Processor ===\n\n"
+        "Testing Numeric Processor...\n"
         f" Trying to validate input '42': {numeric.validate(42)}\n"
-        f" Trying to validata input 'hello': {numeric.validate('hello')}"
+        f" Trying to validate input 'hello': {numeric.validate('hello')}"
     )
     print(" Test invalid ingestion of string 'foo' without prior validation:")
     try:
@@ -144,7 +145,7 @@ if __name__ == "__main__":
     except ValueError as e:
         print(f"Got exception: {e}")
 
-    numerics = [1, 2, 3, 4, 5]
+    numerics: list[int | float] = [1, 2, 3, 4, 5]
     numeric.ingest(numerics)
     print(
         f" Processing data: {numerics}\n"
@@ -154,9 +155,9 @@ if __name__ == "__main__":
         rank, value = numeric.output()
         print(f" Numeric value {rank}: {value}")
     print("\n")
-    text = TextProcesser()
+    text = TextProcessor()
     print(
-        "Testing Text Processer...\n"
+        "Testing Text Processor...\n"
         f" Trying to validate input '42': {text.validate(42)}"
     )
 
@@ -169,9 +170,9 @@ if __name__ == "__main__":
     rank, value = text.output()
     print(f" Text value {rank}: {value}\n\n")
 
-    log = LogProcesser()
+    log = LogProcessor()
     print(
-        "Testing Log Processer...\n"
+        "Testing Log Processor...\n"
         f" Trying to validate input 'hello': {log.validate('hello')}"
     )
 
