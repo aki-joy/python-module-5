@@ -18,11 +18,12 @@ class DataProcesser(ABC):
         pass
 
     def output(self) -> tuple[int, str]:
-        self._index_output += 1
-        return self._data[self._index_output]
+        extracted_data = self._data[0]
+        del self._data[0]
+        return extracted_data
 
     def data_len(self) -> int:
-        return len(self._data) - self._index_output - 1
+        return len(self._data)
 
 
 class NumericProcesser(DataProcesser):
@@ -159,6 +160,11 @@ class DataStream:
                 )
 
     def print_processer_stats(self) -> None:
+        print("== DataStream statistics ==")
+
+        if self._processers == []:
+            print("No processer found, no data\n")
+
         for processer in self._processers:
             print(
                 f"{processer.__class__.__name__}: "
@@ -173,8 +179,8 @@ if __name__ == "__main__":
         "=== Code Nexus - Data Stream ===\n\n"
         "Initialize Data Stream..."
     )
-    if data_stream._processers == []:
-        print("No processer found, no data\n")
+
+    data_stream.print_processer_stats()
 
     numeric = NumericProcesser()
     text = TextProcesser()

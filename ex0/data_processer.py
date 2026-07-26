@@ -17,8 +17,9 @@ class DataProcesser(ABC):
         pass
 
     def output(self) -> tuple[int, str]:
-        self.index_output += 1
-        return self._data[self.index_output]
+        extracted_data = self._data[0]
+        del self._data[0]
+        return extracted_data
 
 
 class NumericProcesser(DataProcesser):
