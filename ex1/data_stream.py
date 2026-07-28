@@ -6,7 +6,6 @@ class DataProcessor(ABC):
     def __init__(self) -> None:
         self._data: list[tuple[int, str]] = []
         self._next_rank: int = 0
-        self._index_output = -1
         self._total_processed = 0
 
     @abstractmethod

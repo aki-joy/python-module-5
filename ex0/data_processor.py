@@ -6,7 +6,6 @@ class DataProcessor(ABC):
     def __init__(self) -> None:
         self._data: list[tuple[int, str]] = []
         self._next_rank: int = 0
-        self.index_output = -1
 
     @abstractmethod
     def validate(self, data: Any) -> bool:
