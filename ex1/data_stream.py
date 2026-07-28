@@ -203,7 +203,6 @@ if __name__ == "__main__":
 
     print(f"Send first batch of data on stream: {datas}\n")
     data_stream.process_stream(datas)
-    print("== DataStream statistics ==")
     data_stream.print_processors_stats()
     print("")
 
@@ -213,7 +212,6 @@ if __name__ == "__main__":
 
     data_stream.process_stream(datas)
     print("Send the same batch again")
-    print("== DataStream statistics ==")
     data_stream.print_processors_stats()
     print("")
 
@@ -226,6 +224,5 @@ if __name__ == "__main__":
     print(
         "Consume some elements from the data processors: "
         "Numeric 3, Text 2, Log 1\n"
-        "== DataStream statistics =="
     )
     data_stream.print_processors_stats()
